@@ -1,0 +1,57 @@
+
+
+This tutorial demonstrates how to toggle and LED with a button. Subtopics discussed include:
+
+    Digital control with TRISx, LATx, and PORTx
+    Disabling analog mode with ANSELx
+    Fast Bit Manipulation with CLR, SET, and INV
+
+Programming a microcontroller to toggle an LED with the push of a button may seem like a trivial feat to an observer but can be so very satisfying to the builder. It involves writing code, dealing with an IDE (integrated development environment – MPLAB X in our case), somehow getting that code onto the target microcontroller, and having a working circuit set up. That’s a lot!
+
+There are multiple tutorials on the M5 site to get you to the point of functionality. Note that this one only discusses some of the code. The configuration bit and include file parts (just about everything before main() in the code below) is discussed in a previous tutorial.
+Digital control with TRISx, LATx, and PORTx
+
+TRISx, LATx, and PORTx are what is called “Special Function Registers” or “SFRs” in the PIC world. An SFR is just a word in memory that controls or monitors some aspect of the PIC32′s functionality. Note that to provide compatibility with previous generation of PICs, all I/O pins on the PIC32 are grouped into ports named in alphabetical order from A-H. The PIC32MX220F032B only uses ports A and B due to the number of pins it has. The ‘x’ in TRISx, LATx, and PORTx is a placeholder for the port name of either ‘A’ or ‘B’. On the PIC32 pinout, pins with digital I/O capabilities are labelled RAn and RBn where n is some number. These are boxed below. Note that pin 14 would be referred to as RB5 when programmed as a digital I/O pin.
+
+TRISx
+TRISx sets the direction of the pin. Corresponding port pin is an input
+when the bit is set (1), output when the bit is cleared (0).
+Think 1=I(nput) and 0=O(utput). For example:
+
+TRISA = 0x000C;         // configure pins RA2 and RA3 to inputs, rest of PortA as outputs
+TRISBbits.TRISB5 = 0;   // configure pin RB5 as an output
+
+LATx
+LATx sets the output value at that particular port.
+
+LATA = 0x003E;          // sets RA1 through RA5 HIGH, all else on PortA LOW
+LATBbits.LATB5 = 1;     // set pin RB5 HIGH
+
+PORTx
+PORTx holds the value at that port’s pin, which can then be read. Pins near 3.3V will have a value of ’1′ while pins near ground will have a value of ’0′.
+
+int val;
+val = PORTA;            // writes the values of all pins on PortA to val
+val = PORTAbits.RA3;    // writes the value of pin RA3 to val
+
+Disabling analog mode with ANSELx
+
+ANSELx is an SFR that controls whether a pin is in analog or digital mode. Certain pins are in analog mode by default and will not work properly (write operations may still work but read operations never will) without turning off analog mode for that pin. You will know if a specific pin defaults to analog mode if the pinout has the signifier ANx next to it. Analog pins are boxed below.
+
+ANSELB = 0;             // Sets all or PortB as digital
+ANSELBbits.ANSB3 = 0;   // sets pin RB3 as digital
+
+Fast Bit Manipulation with CLR, SET, and INV
+
+A majority of SFRs have three additional registers that provide a very fast way of modifying the registers contents. These are the CLR, SET, and INV registers.
+
+Just how fast? When using these registers, the entire read-modify-write operation is performed in a single clock cycle. These operations are thus ‘atomic’ or guaranteed to be completely finished once started. There is no chance for any interrupt related concurrency issue.
+
+To use the CLR, SET, and INV registers, just add the identifier as a suffix to whatever register is being modified. This new register can only be written to. Wherever a ’1′ is found in the write value, the appropriate action will be taken on that bit. Wherever a ’0′ is found in the write value, those bits will be ignored. For example:
+
+TRISB = 0x0101;        // pins RB8 and RB0 are the only inputs on PortB
+TRISBCLR = 0x0100;     // TRISB = 0x0001;
+TRISBSET = 0x0002;     // TRISB = 0x0003;
+TRISBINV = 0x0103;     // TRISB = 0x0100;
+
+To find out if a particular SFR has corresponding CLR, SET, and INV registers, the “Register Map” in the PIC32 datasheet will have a note at the bottom saying something similar to “Note 1: All registers in this table have corresponding CLR, SET and INV registers at their virtual addresses, plus offsets of 0×4, 0×8 and 0xC, respectively. See Section 11.2 “CLR, SET and INV Registers” for more information.”
